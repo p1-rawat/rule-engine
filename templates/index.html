@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rule Engine</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="create-rule">
+            <h2>Create Rule</h2>
+            <input type="text" placeholder="Enter rule" id="ruleInput">
+            <button id="createRuleBtn">Create Rule</button>
+            <div class="message" id="messageDisplay"></div> <!-- Message display -->
+        </div>
+        <div class="divider"></div>
+        <div class="check-eligibility">
+            <h2>Check Eligibility</h2>
+            <form id="eligibilityForm">
+                <label for="age">Age:</label>
+                <input type="number" id="age" placeholder="Enter age" required><br><br>
+                <label for="department">Department:</label>
+                <input type="text" id="department" placeholder="Enter department" required><br><br>
+                <label for="salary">Salary:</label>
+                <input type="number" id="salary" placeholder="Enter salary" required><br><br>
+                <label for="experience">Experience:</label>
+                <input type="number" id="experience" placeholder="Enter experience" required><br><br>
+                <button type="submit">Check Eligibility</button>
+            </form>
+            <div class="message" id="eligibilityMessage"></div> <!-- Eligibility result display -->
+        </div>
+    </div>
+
+    <div id="astDisplay" class="ast-container"></div>
+
+    <script>
+        document.getElementById("createRuleBtn").addEventListener("click", async function () {
+            const rule = document.getElementById("ruleInput").value;
+            const response = await fetch('/create_rule', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ rule })
+            });
+            const data = await response.json();
+            
+            const messageDisplay = document.getElementById("messageDisplay");
+
+            if (data.ast) {
+                renderTree(data.ast, document.getElementById("astDisplay"));
+                messageDisplay.textContent = "Rule Created"; 
+                messageDisplay.classList.add('visible'); 
+                document.getElementById("ruleInput").value = ""; 
+            } else {
+                alert("Error creating rule: " + data.error);
+            }
+        });
+
+        document.getElementById("eligibilityForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const age = document.getElementById("age").value;
+            const department = document.getElementById("department").value;
+            const salary = document.getElementById("salary").value;
+            const experience = document.getElementById("experience").value;
+
+            const userData = {
+                age: parseInt(age),
+                department: department,
+                salary: parseInt(salary),
+                experience: parseInt(experience)
+            };
+
+            const response = await fetch('/check_eligibility', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(userData)
+            });
+            const data = await response.json();
+
+            const eligibilityMessage = document.getElementById("eligibilityMessage");
+            eligibilityMessage.textContent = data.message; // Show eligibility result
+        });
+
+        function renderTree(node, container) {
+            if (!node) return;
+            
+            const div = document.createElement("div");
+            div.className = "node";
+            div.textContent = node.value;
+
+            const childrenContainer = document.createElement("div");
+            childrenContainer.className = "children";
+
+            if (node.left) {
+                const leftContainer = document.createElement("div");
+                renderTree(node.left, leftContainer);
+                childrenContainer.appendChild(leftContainer);
+            }
+
+            if (node.right) {
+                const rightContainer = document.createElement("div");
+                renderTree(node.right, rightContainer);
+                childrenContainer.appendChild(rightContainer);
+            }
+
+            div.appendChild(childrenContainer);
+            container.innerHTML = ""; // Clear previous tree if any
+            container.appendChild(div);
+        }
+    </script>
+</body>
+</html>
